@@ -1,75 +1,190 @@
-<!-- AUTO-GENERATED-CONTENT:START (STARTER) -->
-<p align="center">
-  <a href="https://www.gatsbyjs.com">
-    <img alt="Gatsby" src="https://www.gatsbyjs.com/Gatsby-Monogram.svg" width="60" />
-  </a>
-</p>
-<h1 align="center">
-  Gatsby WordPress blog starter
-</h1>
+# WooGraphQL / WPGatsby Featured Image Bug
 
-Kick off your wordpress gatsby project with this blog boilerplate. This starter ships with the main Gatsby Wordpress configuration files you might need to get up and running blazing fast with the blazing fast app generator for React.
+## Description
 
-_Have another more specific idea? You may want to check out our vibrant collection of [official and community-created starters](https://www.gatsbyjs.com/docs/gatsby-starters/)._
+Gatsby doesn't create nodes for featured images when WordPress plugin "WPGraphQL WooCommerce (WooGraphQL)" is active.
 
-## 🚀 Quick start
+ - GraphiQL IDE `mediaItems` returns all media nodes correctly.
+ - Altair GraphQL client `mediaItems` returns all media nodes correctly.
+ - Gatsby (`/___graphql`) `allWpMediaItem` returns only content-inline media nodes, NOT `featuredImage` nodes.
+ - Gatsby (`/___graphql`) `allWpPage` and `allWpPost` return ID values for `featuredImageId`, even though the `featuredImage` nodes are `null`.
 
-To get your project started or to just try it out, you can **follow the [Gatsby Wordpress Quickstart](https://github.com/gatsbyjs/gatsby-source-wordpress-experimental/blob/master/docs/getting-started.md#quick-start)** instructions
+## WP Debug Logs
 
-## 🧐 What's inside?
+This error is produced on `gatsby build`:
+```
+[06-Apr-2022 03:39:47 UTC] PHP Warning:  Trying to access array offset on value of type bool in /var/www/woo-gatsby-demo.bigupweb.uk/wp-content/plugins/wp-gatsby/src/Schema/WPGatsbyWPGraphQLSchemaChanges.php on line 54
+```
 
-A quick look at the top-level files and directories you'll see in a Gatsby project.
+## The Reproduction Environment
 
-    .
-    ├── node_modules
-    ├── src
-    ├── .gitignore
-    ├── .prettierrc
-    ├── gatsby-browser.js
-    ├── gatsby-config.js
-    ├── gatsby-node.js
-    ├── gatsby-ssr.js
-    ├── LICENSE
-    ├── package-lock.json
-    ├── package.json
-    └── README.md
+**Gatsby**
+[This repo](https://github.com/BigupWeb/gatsby-wordpress-woo-featured-image-bug) is a clone of the "Gatsby WordPress Blog Starter". The only edits, are the setting of the WordPress source url in gatsby-config.js, and the README.
 
-1.  **`/node_modules`**: This directory contains all of the modules of code that your project depends on (npm packages) are automatically installed.
+**WordPress Version: 5.9.3**
+[This self hosted demo](https://woo-gatsby-demo.bigupweb.uk) is a fresh install with only the basic setup completed and 6 images uploaded via the media library.
+[WordPress GraphQL Endpoint](https://woo-gatsby-demo.bigupweb.uk/graphql)
 
-2.  **`/src`**: This directory will contain all of the code related to what you will see on the front-end of your site (what you see in the browser) such as your site header or a page template. `src` is a convention for “source code”.
+**WordPress Plugins**
+ - WooCommerce 6.3.1
+ - WPGraphQL WooCommerce (WooGraphQL) 1.7.2
+ - WP Gatsby 2.3.2
+ - WP GraphQL 1.7.2
 
-3.  **`.gitignore`**: This file tells git which files it should not track / not maintain a version history for.
+**Test Images**
+The 6 images are titled and alt-texted as below, which reflects their location in published posts to aid debugging in GraphQL output:
 
-4.  **`.prettierrc`**: This is a configuration file for [Prettier](https://prettier.io/). Prettier is a tool to help keep the formatting of your code consistent.
+```
+page-featured
+page-inline
+post-featured
+post-inline
+product-gallery-image
+product-main-image
+```
 
-5.  **`gatsby-browser.js`**: This file is where Gatsby expects to find any usage of the [Gatsby browser APIs](https://www.gatsbyjs.com/docs/browser-apis/) (if any). These allow customization/extension of default Gatsby settings affecting the browser.
+## Reproduce the Bug
 
-6.  **`gatsby-config.js`**: This is the main configuration file for a Gatsby site. This is where you can specify information about your site (metadata) like the site title and description, which Gatsby plugins you’d like to include, etc. (Check out the [config docs](https://www.gatsbyjs.com/docs/gatsby-config/) for more detail). **\*Wordpress Users:** This is where you configure your wordpress URL, and provide other plugin settings.\*
+1. Clone [this repo](https://github.com/BigupWeb/gatsby-wordpress-woo-featured-image-bug) and npm install.
 
-7.  **`gatsby-node.js`**: This file is where Gatsby expects to find any usage of the [Gatsby Node APIs](https://www.gatsbyjs.com/docs/node-apis/) (if any). These allow customization/extension of default Gatsby settings affecting pieces of the site build process. **\*Wordpress Users:** This is where you customize how gatsby consumes your wordpress graphql schema, and generates your gatsby content schema. The starter will handle post and blog types.\*
+2. Run `gatsby clean && gatsby develop` (the WP source is hard-coded in config, so no setup required).
 
-8.  **`gatsby-ssr.js`**: This file is where Gatsby expects to find any usage of the [Gatsby server-side rendering APIs](https://www.gatsbyjs.com/docs/ssr-apis/) (if any). These allow customization of default Gatsby settings affecting server-side rendering.
+3. Browse `http://localhost:8000/___graphql` and copy in these test queries:
 
-9.  **`LICENSE`**: This Gatsby starter is licensed under the 0BSD license. This means that you can see this file as a placeholder and replace it with your own license.
+```
+query MediaQuery {
+  allWpMediaItem {
+    nodes {
+    	id
+    	altText
+    }
+  }
+}
 
-10. **`package-lock.json`** (See `package.json` below, first). This is an automatically generated file based on the exact versions of your npm dependencies that were installed for your project. **(You won’t change this file directly).**
+query PostQuery {
+  allWpPost {
+    nodes {
+      title
+      featuredImageId
+      featuredImage {
+        node {
+          id
+          altText
+        }
+      }
+    }
+  }
+}
 
-11. **`package.json`**: A manifest file for Node.js projects, which includes things like metadata (the project’s name, author, etc). This manifest is how npm knows which packages to install for your project.
+query PageQuery {
+  allWpPage {
+    nodes {
+      title
+      featuredImageId
+      featuredImage {
+        node {
+          id
+          altText
+        }
+      }
+    }
+  }
+}
+```
 
-12. **`README.md`**: A text file containing useful reference information about your project.
+4. Run each query and observe the following:
 
-## 🎓 Learning Gatsby
+ - `allWpMediaItem` only returns the 2 `inline` images, not the featured.
+ - `allWpPost` returns the post "Hello world!" with a `featuredImageId`, but a `null` `featuredImage` node.
+ - `allWpPage` returns 5 pages, "Sample Page" has a featured image set, but again the `featuredImage` node is `null` even though the `featuredImageId` is populated.
+ - `allWpProduct` returns no image nodes at all.
 
-Looking for more guidance? Full documentation for Gatsby lives [on the website](https://www.gatsbyjs.com/). Here are some places to start:
+ ## Expected Results
 
-- **For most developers, we recommend starting with our [in-depth tutorial for creating a site with Gatsby](https://www.gatsbyjs.com/tutorial/).** It starts with zero assumptions about your level of ability and walks through every step of the process.
+ As soon as the WooGraphQL plugin is disabled, the image nodes appear after the next `gatsby build`. See the produced results below, noteably, the featured images now appear in all cases. Only one page has a featured image, so the other four nulls can be ignored.
 
-- **To dive straight into code samples, head [to our documentation](https://www.gatsbyjs.com/docs/).** In particular, check out the _Guides_, _API Reference_, and _Advanced Tutorials_ sections in the sidebar.
+ In this reproduction instance, I will leave the plugin ENABLED so the API can be interrogated with the bug present.
 
-## 💫 Deploy
+ ```
+##
+# Output With WooGraphQL Disabled
+##
 
-Deploy this starter with one click on [Gatsby Cloud](https://www.gatsbyjs.com/cloud/):
+# Media Items
+"allWpMediaItem": {
+	"nodes": [
+		{
+			"id": "cG9zdDoyMg==",
+			"altText": "post-inline"
+		},
+		{
+			"id": "cG9zdDoyNg==",
+			"altText": "page-inline"
+		},
+		{
+			"id": "cG9zdDoyNA==",
+			"altText": "post-featured"
+		},
+		{
+			"id": "cG9zdDoyOA==",
+			"altText": "page-featured"
+		}
+	]
+}
 
-[<img src="https://www.gatsbyjs.com/deploynow.svg" alt="Deploy to Gatsby Cloud">](https://www.gatsbyjs.com/dashboard/deploynow?url=https://github.com/gatsbyjs/gatsby-starter-wordpress-blog)
+# Posts
+"allWpPost": {
+	"nodes": [
+		{
+			"title": "Hello world!",
+			"featuredImageId": "cG9zdDoyNA==",
+			"featuredImage": {
+			"node": {
+				"id": "cG9zdDoyNA==",
+				"altText": "post-featured"
+			}
+			}
+		}
+	]
+}
 
-<!-- AUTO-GENERATED-CONTENT:END -->
+# Pages
+"allWpPage": {
+	"nodes": [
+		{
+			"title": "My account",
+			"featuredImageId": null,
+			"featuredImage": null
+		},
+		{
+			"title": "Checkout",
+			"featuredImageId": null,
+			"featuredImage": null
+		},
+		{
+			"title": "Cart",
+			"featuredImageId": null,
+			"featuredImage": null
+		},
+		{
+			"title": "Shop",
+			"featuredImageId": null,
+			"featuredImage": null
+		},
+		{
+			"title": "Sample Page",
+			"featuredImageId": "cG9zdDoyOA==",
+			"featuredImage": {
+			"node": {
+				"id": "cG9zdDoyOA==",
+				"altText": "page-featured"
+			}
+			}
+		}
+	]
+}
+
+# Products
+# Woo plugin disabled, so cannot test. 
+
+```
