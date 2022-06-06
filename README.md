@@ -1,5 +1,12 @@
 # WooGraphQL / WPGatsby Featured Image Bug
 
+**Error demo**
+
+This repo only exists as a demo for the issue reported here:
+
+https://github.com/wp-graphql/wp-graphql-woocommerce/issues/620
+
+
 ## Description
 
 Gatsby doesn't create nodes for featured images when WordPress plugin "WPGraphQL WooCommerce (WooGraphQL)" is active.
